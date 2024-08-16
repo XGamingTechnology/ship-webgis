@@ -25,6 +25,7 @@
   <body>
     <div class="sidebar" id="sidebar">
       <h3>Layer Control</h3>
+
       <!-- Basemap Dropdown -->
       <div class="form-group">
         <label for="basemap-select">Select Basemap:</label>
@@ -37,27 +38,22 @@
         </select>
       </div>
 
-      <!-- GeoJSON Select Dropdown -->
+      <!-- Ship Data Checkbox -->
       <div class="form-group">
-        <label for="geojson-select">Select Data Type:</label>
-        <select id="geojson-select" class="form-control">
-          <option value="none">None</option>
-          <option value="ships">Ship Data</option>
-          <option value="routes">Route Data</option>
-          <option value="docks">Dock Data</option>
-          <!-- Add more options as needed -->
-        </select>
+        <input type="checkbox" id="ship-checkbox" />
+        <label for="ship-checkbox">Ship Data</label>
       </div>
 
-      <!-- Vector Layer Checkbox List -->
-      <div
-        class="form-group"
-        id="layer-checkbox-container"
-        style="display: none"
-      >
-        <label>Select Specific Layer:</label>
-        <div id="layer-checkboxes"></div>
-        <!-- Div for checkboxes -->
+      <!-- Route Data Checkbox -->
+      <div class="form-group">
+        <input type="checkbox" id="route-checkbox" />
+        <label for="route-checkbox">Route Data</label>
+      </div>
+
+      <!-- Dock Data Checkbox -->
+      <div class="form-group">
+        <input type="checkbox" id="dock-checkbox" />
+        <label for="dock-checkbox">Dock Data</label>
       </div>
     </div>
 
