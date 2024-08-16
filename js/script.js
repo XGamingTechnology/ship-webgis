@@ -114,8 +114,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             });
                         },
                         onEachFeature: function (feature, layer) {
-                            const popupContent = generatePopupContent(feature.properties);
-                            layer.bindPopup(popupContent);
+                            layer.bindPopup(`<strong>Dock Name:</strong> ${feature.properties.nama_dock}<br>
+                                             <strong>Capacity:</strong> ${feature.properties.kapasitas}<br>`);
                         }
                     });
                     docks.addTo(map);
@@ -126,37 +126,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // Function to generate the pop-up content with a responsive table
-    function generatePopupContent(properties) {
-        return `
-            <div class="card" style="width: 100%;">
-                <div class="card-body">
-                    <h5 class="card-title">${properties['nama kapal']}</h5>
-                    <h6 class="card-subtitle mb-2 text-muted">${properties['jenis kapal']}</h6>
-                    <table class="table table-sm table-bordered">
-                        <tbody>
-                            <tr>
-                                <th scope="row">ID Kapal</th>
-                                <td>${properties['id kapal']}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Kapasitas</th>
-                                <td>${properties.kapasitas || 'N/A'}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Waktu</th>
-                                <td>${properties.waktu ? new Date(properties.waktu * 86400000).toLocaleString() : 'N/A'}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">Coordinates</th>
-                                <td>[${properties.lat}, ${properties.lng}]</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>`;
-    }
-
     // Function to simulate ship movement
     function simulateShipMovement() {
         Object.keys(shipMarkers).forEach(shipId => {
@@ -165,14 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const newLatLng = shipPositions[currentTimeIndex].latlng;
                 const marker = shipMarkers[shipId];
                 marker.setLatLng(newLatLng).update();
-                marker.getPopup().setContent(generatePopupContent({
-                    'nama kapal': shipId,
-                    'id kapal': shipId,
-                    kapasitas: 'N/A',
-                    lat: newLatLng.lat,
-                    lng: newLatLng.lng,
-                    waktu: shipPositions[currentTimeIndex].waktu
-                }));
+                marker.getPopup().setContent(`<strong>Nama Kapal:</strong> ${shipId}<br><strong>Waktu:</strong> ${shipPositions[currentTimeIndex].waktu}`);
             }
         });
 
@@ -221,9 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    
-
-    // Sidebar toggle functionality
+        // Sidebar toggle functionality
     const sidebar = document.querySelector('.sidebar');
     const mapContainer = document.querySelector('.map-container');
     const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -236,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             sidebar.classList.add('visible');
             mapContainer.classList.add('shifted');
-            sidebarToggle.innerHTML = `<i class="fas fa-chevron-left'></i>`;
+            sidebarToggle.innerHTML = `<i class="fas fa-chevron-left"></i>`;
         }
     }
 
