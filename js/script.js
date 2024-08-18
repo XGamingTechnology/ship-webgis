@@ -30,10 +30,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Object to hold ship markers and data
-    let shipMarkers = {};
-    let shipData = {};
-    let intervalId;
+    let shipMarkers = {};  // Define shipMarkers here
+    let shipLayer = null;
+    let routeLayer = null;
+    let dockLayer = null;
+    let shipData = {}; // Added to store ship data
     let currentTimeIndex = 0;
+    let intervalId = null; // Define intervalId here
 
     // Function to load GeoJSON data and add to the map
     function loadGeoJsonData(url, type) {
@@ -50,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 if (type === 'ships') {
-                    shipData = {}; // Reset ship data
+                    shipData = {};  // Reset ship data
 
                     data.features.forEach(feature => {
                         const shipId = feature.properties.id_kapal;
@@ -91,7 +94,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     intervalId = setInterval(simulateShipMovement, 5000); // 5-second interval
 
                 } else if (type === 'routes') {
-                    const routes = L.geoJSON(data, {
+                    if (routeLayer) {
+                        map.removeLayer(routeLayer);
+                    }
+                    routeLayer = L.geoJSON(data, {
                         style: function () {
                             return { color: '#FF0000', weight: 3 };
                         },
@@ -99,10 +105,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             layer.bindPopup(`<strong>Route ID:</strong> ${feature.properties.route_id}<br>
                                              <strong>Ship ID:</strong> ${feature.properties.ship_id}`);
                         }
-                    });
-                    routes.addTo(map);
+                    }).addTo(map);
                 } else if (type === 'docks') {
-                    const docks = L.geoJSON(data, {
+                    if (dockLayer) {
+                        map.removeLayer(dockLayer);
+                    }
+                    dockLayer = L.geoJSON(data, {
                         pointToLayer: function (feature, latlng) {
                             return L.marker(latlng, {
                                 icon: L.icon({
@@ -117,8 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             layer.bindPopup(`<strong>Dock Name:</strong> ${feature.properties.nama_dock}<br>
                                              <strong>Capacity:</strong> ${feature.properties.kapasitas}<br>`);
                         }
-                    });
-                    docks.addTo(map);
+                    }).addTo(map);
                 }
             })
             .catch(error => {
@@ -128,34 +135,67 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Function to simulate ship movement
     function simulateShipMovement() {
+        console.log("Simulating ship movement...");
+    
         Object.keys(shipMarkers).forEach(shipId => {
             const shipPositions = shipData[shipId];
-            if (currentTimeIndex < shipPositions.length) {
-                const newLatLng = shipPositions[currentTimeIndex].latlng;
-                const marker = shipMarkers[shipId];
-                marker.setLatLng(newLatLng).update();
-                marker.getPopup().setContent(`<strong>Nama Kapal:</strong> ${shipId}<br><strong>Waktu:</strong> ${shipPositions[currentTimeIndex].waktu}`);
+            if (shipPositions) {
+                if (currentTimeIndex < shipPositions.length) {
+                    const newLatLng = shipPositions[currentTimeIndex].latlng;
+    
+                    // Remove the old marker if it exists
+                    if (shipMarkers[shipId]) {
+                        map.removeLayer(shipMarkers[shipId]);
+                    }
+    
+                    // Create a new marker at the new position
+                    const marker = L.marker(newLatLng, {
+                        icon: L.icon({
+                            iconUrl: 'images/ship-marker.png', // Update with actual ship icon path
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 32],
+                            popupAnchor: [0, -32]
+                        })
+                    }).addTo(map);
+    
+                    // Update the popup content with the correct data
+                    marker.bindPopup(`
+                        <strong>Nama Kapal:</strong> ${shipId}<br>
+                        <strong>ID Kapal:</strong> ${shipId}<br>
+                        <strong>Waktu:</strong> ${new Date(shipPositions[currentTimeIndex].waktu * 86400000).toLocaleString()}
+                    `);
+    
+                    // Store the marker in the shipMarkers object
+                    shipMarkers[shipId] = marker;
+                }
             }
         });
-
+    
         currentTimeIndex++;
-
+        console.log("Current Time Index:", currentTimeIndex);
+    
         // Reset the index if we've reached the end of the data
         if (currentTimeIndex >= Math.max(...Object.values(shipData).map(data => data.length))) {
             currentTimeIndex = 0;
+            console.log("Resetting currentTimeIndex");
         }
     }
-
+    
     // Checkbox change handlers
     document.getElementById('ship-checkbox').addEventListener('change', function () {
         if (this.checked) {
             loadGeoJsonData('data/kapal.geojson', 'ships');
         } else {
+            // Remove all ship markers
             Object.keys(shipMarkers).forEach(shipId => {
                 map.removeLayer(shipMarkers[shipId]);
             });
-            shipMarkers = {};
-            clearInterval(intervalId); // Clear the interval when the layer is removed
+            shipMarkers = {};  // Clear the shipMarkers object
+
+            // Stop the simulation
+            clearInterval(intervalId);
+            intervalId = null;
+            currentTimeIndex = 0;  // Reset the time index
         }
     });
 
@@ -163,11 +203,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (this.checked) {
             loadGeoJsonData('data/rute kapal.json', 'routes');
         } else {
-            map.eachLayer(function (layer) {
-                if (layer instanceof L.GeoJSON && layer.feature && layer.feature.properties.route_id) {
-                    map.removeLayer(layer);
-                }
-            });
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
+                routeLayer = null;
+            }
         }
     });
 
@@ -175,15 +214,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (this.checked) {
             loadGeoJsonData('data/dermaga.geojson', 'docks');
         } else {
-            map.eachLayer(function (layer) {
-                if (layer instanceof L.GeoJSON && layer.feature && layer.feature.properties.nama_dock) {
-                    map.removeLayer(layer);
-                }
-            });
+            if (dockLayer) {
+                map.removeLayer(dockLayer);
+                dockLayer = null;
+            }
         }
     });
 
-        // Sidebar toggle functionality
+    // Sidebar toggle functionality
     const sidebar = document.querySelector('.sidebar');
     const mapContainer = document.querySelector('.map-container');
     const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -196,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             sidebar.classList.add('visible');
             mapContainer.classList.add('shifted');
-            sidebarToggle.innerHTML = `<i class="fas fa-chevron-left"></i>`;
+            sidebarToggle.innerHTML = `<i class="fas fa-chevron-left'></i>`;
         }
     }
 
