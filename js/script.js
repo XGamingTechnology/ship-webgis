@@ -98,8 +98,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             return { color: '#FF0000', weight: 3 };
                         },
                         onEachFeature: function (feature, layer) {
-                            layer.bindPopup(`<strong>Route ID:</strong> ${feature.properties.route_id}<br>
-                                             <strong>Ship ID:</strong> ${feature.properties.ship_id}`);
+                            layer.bindPopup(`<strong>Route ID:</strong> ${feature.properties.id || 'N/A'}<br>
+                            <strong>Ship ID:</strong> ${feature.properties["id kapal"] || 'N/A'}<br>`);
                         }
                     }).addTo(map);
                 } else if (type === 'docks') {
@@ -118,8 +118,10 @@ document.addEventListener('DOMContentLoaded', function () {
                             });
                         },
                         onEachFeature: function (feature, layer) {
-                            layer.bindPopup(`<strong>Dock Name:</strong> ${feature.properties.nama_dock}<br>
-                                             <strong>Capacity:</strong> ${feature.properties.kapasitas}<br>`);
+                            layer.bindPopup(`
+                            <strong>ID Kapal:</strong> ${feature.properties["id kapal"]}<br>
+                            <strong>Dock Name:</strong> ${feature.properties["nama kapal"]}<br>
+                            <strong>Capacity:</strong> ${feature.properties.kapasitas}<br>`);
                         }
                     }).addTo(map);
                 }
