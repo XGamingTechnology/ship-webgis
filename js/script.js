@@ -14,21 +14,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Add default basemap
     basemaps.osm.addTo(map);
 
-    // Handle basemap change
-    document.getElementById('basemap-select').addEventListener('change', function (event) {
-        const selectedBasemap = event.target.value;
-
-        // Remove all tile layers
-        map.eachLayer(function (layer) {
-            if (layer instanceof L.TileLayer) {
-                map.removeLayer(layer);
-            }
-        });
-
-        // Add selected basemap
-        basemaps[selectedBasemap].addTo(map);
-    });
-
     // Object to hold ship markers and data
     let shipMarkers = {};  // Define shipMarkers here
     let shipLayer = null;
@@ -55,14 +40,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (type === 'ships') {
                     shipData = {};  // Reset ship data
 
-                    data.features.forEach(feature => {
-                        const shipId = feature.properties.id_kapal;
+                    // Process each feature in the GeoJSON
+                    data.features.forEach((feature) => {
+                        const shipId = feature.properties["id kapal"];
+                        const namaKapal = feature.properties["nama kapal"];
+                        const waktu = feature.properties["waktu"];
+                        const coordinates = feature.geometry.coordinates;
+
                         if (!shipData[shipId]) {
                             shipData[shipId] = [];
                         }
                         shipData[shipId].push({
-                            latlng: L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]),
-                            waktu: feature.properties.waktu
+                            latlng: L.latLng(coordinates[1], coordinates[0]),
+                            waktu: waktu,
+                            namaKapal: namaKapal
                         });
                     });
 
@@ -74,6 +65,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Initialize markers at the first position
                     Object.keys(shipData).forEach(shipId => {
                         const firstPosition = shipData[shipId][0].latlng;
+                        if (shipMarkers[shipId]) {
+                            map.removeLayer(shipMarkers[shipId]);
+                        }
                         const marker = L.marker(firstPosition, {
                             icon: L.icon({
                                 iconUrl: 'images/ship-marker.png', // Update with actual ship icon path
@@ -83,7 +77,9 @@ document.addEventListener('DOMContentLoaded', function () {
                             })
                         }).addTo(map);
 
-                        marker.bindPopup(`<strong>Nama Kapal:</strong> ${shipId}`);
+                        marker.bindPopup(`<strong>Nama Kapal:</strong> ${shipData[shipId][0].namaKapal || 'N/A'}<br>
+                        <strong>ID Kapal:</strong> ${shipId}<br>
+                        <strong>Waktu:</strong> ${new Date(shipData[shipId][0].waktu * 86400000).toLocaleString()}`);
                         shipMarkers[shipId] = marker;
                     });
 
@@ -136,51 +132,37 @@ document.addEventListener('DOMContentLoaded', function () {
     // Function to simulate ship movement
     function simulateShipMovement() {
         console.log("Simulating ship movement...");
-    
+
         Object.keys(shipMarkers).forEach(shipId => {
             const shipPositions = shipData[shipId];
             if (shipPositions) {
                 if (currentTimeIndex < shipPositions.length) {
                     const newLatLng = shipPositions[currentTimeIndex].latlng;
-    
-                    // Remove the old marker if it exists
-                    if (shipMarkers[shipId]) {
-                        map.removeLayer(shipMarkers[shipId]);
-                    }
-    
-                    // Create a new marker at the new position
-                    const marker = L.marker(newLatLng, {
-                        icon: L.icon({
-                            iconUrl: 'images/ship-marker.png', // Update with actual ship icon path
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 32],
-                            popupAnchor: [0, -32]
-                        })
-                    }).addTo(map);
-    
+
+                    // Update the existing marker's position
+                    const marker = shipMarkers[shipId];
+                    marker.setLatLng(newLatLng).update();
+
                     // Update the popup content with the correct data
-                    marker.bindPopup(`
-                        <strong>Nama Kapal:</strong> ${shipId}<br>
+                    marker.getPopup().setContent(`
+                        <strong>Nama Kapal:</strong> ${shipPositions[currentTimeIndex].namaKapal || 'N/A'}<br>
                         <strong>ID Kapal:</strong> ${shipId}<br>
                         <strong>Waktu:</strong> ${new Date(shipPositions[currentTimeIndex].waktu * 86400000).toLocaleString()}
-                    `);
-    
-                    // Store the marker in the shipMarkers object
-                    shipMarkers[shipId] = marker;
+                    `).update();
                 }
             }
         });
-    
+
         currentTimeIndex++;
         console.log("Current Time Index:", currentTimeIndex);
-    
+
         // Reset the index if we've reached the end of the data
         if (currentTimeIndex >= Math.max(...Object.values(shipData).map(data => data.length))) {
             currentTimeIndex = 0;
             console.log("Resetting currentTimeIndex");
         }
     }
-    
+
     // Checkbox change handlers
     document.getElementById('ship-checkbox').addEventListener('change', function () {
         if (this.checked) {
@@ -244,6 +226,6 @@ document.addEventListener('DOMContentLoaded', function () {
     sidebarToggle.addEventListener('click', function () {
         const isVisible = sidebar.classList.toggle('visible');
         mapContainer.classList.toggle('shifted', isVisible);
-        sidebarToggle.innerHTML = `<i class="fas fa-chevron-${isVisible ? 'left' : 'right'}"></i>`;
+        sidebarToggle.innerHTML = `<i class="fas fa-chevron-${isVisible ? 'left' : 'right'}'></i>`;
     });
 });
